@@ -32,7 +32,7 @@ class AppTheme {
           fontWeight: FontWeight.bold,
         ),
       ),
-      textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
+     textTheme: GoogleFonts.notoSansTextTheme(ThemeData.dark().textTheme).apply(bodyColor: AppColors.white), 
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.gold,

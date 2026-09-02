@@ -11,7 +11,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await NotificationService().init();await Supabase.initialize(
-    url: 'https://bwjduqulvvpgbeblgxox.supabase.co',
+    url: 'https://hkvccgtpuipcqongrvmw.supabase.co',
     anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3amR1cXVsdnZwZ2JlYmxneG94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyNTY3NzgsImV4cCI6MjEwMzgzMjc3OH0.0QKMXHU8900qPKa1D7uHn5W29H8AkE5xS3j3DWzafK0',
   );
   runApp(const AshapaApp());

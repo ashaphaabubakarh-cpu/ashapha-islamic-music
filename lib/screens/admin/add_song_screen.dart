@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../services/firestore_service.dart';
 import '../../models/song.dart';
@@ -8,8 +8,7 @@ import '../../theme/app_theme.dart';
 
 /// NOTE: this screen uses `file_picker` to let the admin choose an
 /// audio file (mp3/m4a) and a cover image from their own device, then
-/// uploads both to Firebase Storage. Add `file_picker: ^6.1.1` to
-/// pubspec.yaml if it isn't already there.
+/// uploads both to Supabase Storage (songs / covers buckets).
 class AddSongScreen extends StatefulWidget {
   const AddSongScreen({super.key});
 
@@ -26,7 +25,6 @@ class _AddSongScreenState extends State<AddSongScreen> {
   File? _audioFile;
   File? _coverFile;
   bool _uploading = false;
-  double _progress = 0;
 
   Future<void> _pickAudio() async {
     final result = await FilePicker.platform.pickFiles(type: FileType.audio);
@@ -45,44 +43,64 @@ class _AddSongScreenState extends State<AddSongScreen> {
   Future<void> _upload() async {
     if (_audioFile == null || _titleCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ka zaɓi audio file kuma ka rubuta suna.')),
+        const SnackBar(content: Text('Ka zabi audio file kuma ka rubuta suna.')),
       );
       return;
     }
+
     setState(() => _uploading = true);
 
-    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    try {
+      final id = DateTime.now().millisecondsSinceEpoch.toString();
+      final storage = Supabase.instance.client.storage;
 
-    final audioRef = FirebaseStorage.instance.ref('songs/$id.mp3');
-    final audioTask = audioRef.putFile(_audioFile!);
-    audioTask.snapshotEvents.listen((s) {
-      setState(() => _progress = s.bytesTransferred / s.totalBytes);
-    });
-    await audioTask;
-    final audioUrl = await audioRef.getDownloadURL();
+      // Upload audio to Supabase Storage "songs" bucket
+      final audioPath = '$id.mp3';
+      await storage.from('songs').upload(
+            audioPath,
+            _audioFile!,
+            fileOptions: const FileOptions(upsert: true),
+          );
+      final audioUrl = storage.from('songs').getPublicUrl(audioPath);
 
-    String coverUrl = '';
-    if (_coverFile != null) {
-      final coverRef = FirebaseStorage.instance.ref('covers/$id.jpg');
-      await coverRef.putFile(_coverFile!);
-      coverUrl = await coverRef.getDownloadURL();
-    }
+      // Upload cover (optional) to "covers" bucket
+      String coverUrl = '';
+      if (_coverFile != null) {
+        final coverPath = '$id.jpg';
+        await storage.from('covers').upload(
+              coverPath,
+              _coverFile!,
+              fileOptions: const FileOptions(upsert: true),
+            );
+        coverUrl = storage.from('covers').getPublicUrl(coverPath);
+      }
 
-    final song = Song(
-      id: id,
-      title: _titleCtrl.text.trim(),
-      artist: _artistCtrl.text.trim(),
-      audioUrl: audioUrl,
-      coverUrl: coverUrl,
-      durationSeconds: 0,
-      category: _categoryCtrl.text.trim(),
-      createdAt: DateTime.now(),
-    );
-    await _firestore.addSong(song);
+      final song = Song(
+        id: id,
+        title: _titleCtrl.text.trim(),
+        artist: _artistCtrl.text.trim(),
+        audioUrl: audioUrl,
+        coverUrl: coverUrl,
+        durationSeconds: 0,
+        category: _categoryCtrl.text.trim(),
+        createdAt: DateTime.now(),
+      );
+      await _firestore.addSong(song);
 
-    if (mounted) {
-      setState(() => _uploading = false);
-      Navigator.of(context).pop();
+      if (mounted) {
+        setState(() => _uploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('An dora waka cikin nasara!')),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _uploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Kuskure wajen dorawa: $e')),
+        );
+      }
     }
   }
 
@@ -90,7 +108,7 @@ class _AddSongScreenState extends State<AddSongScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.black,
-      appBar: AppBar(title: const Text('Ƙara Sabon Waƙa')),
+      appBar: AppBar(title: const Text('Kara Sabon Waka')),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -99,13 +117,13 @@ class _AddSongScreenState extends State<AddSongScreen> {
             TextField(
               controller: _titleCtrl,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(hintText: 'Sunan Waƙa'),
+              decoration: const InputDecoration(hintText: 'Sunan Waka'),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _artistCtrl,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(hintText: 'Mawaƙi'),
+              decoration: const InputDecoration(hintText: 'Mawaki'),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -118,7 +136,7 @@ class _AddSongScreenState extends State<AddSongScreen> {
               onPressed: _pickAudio,
               icon: const Icon(Icons.audio_file, color: AppColors.gold),
               label: Text(
-                _audioFile == null ? 'Zaɓi Audio File' : 'Audio: ✓ an zaɓa',
+                _audioFile == null ? 'Zabi Audio File' : 'Audio: ✓ an zaba',
                 style: const TextStyle(color: AppColors.goldLight),
               ),
             ),
@@ -127,21 +145,21 @@ class _AddSongScreenState extends State<AddSongScreen> {
               onPressed: _pickCover,
               icon: const Icon(Icons.image, color: AppColors.gold),
               label: Text(
-                _coverFile == null ? 'Zaɓi Cover Image (zaɓi ne kawai)' : 'Cover: ✓ an zaɓa',
+                _coverFile == null ? 'Zabi Cover Image (zabi ne kawai)' : 'Cover: ✓ an zaba',
                 style: const TextStyle(color: AppColors.goldLight),
               ),
             ),
             const SizedBox(height: 24),
             if (_uploading) ...[
-              LinearProgressIndicator(value: _progress, color: AppColors.gold),
+              const LinearProgressIndicator(color: AppColors.gold),
               const SizedBox(height: 8),
-              Text('${(_progress * 100).toInt()}%',
-                  style: const TextStyle(color: Colors.grey)),
+              const Text('Ana dorawa, da fatan za a jira...',
+                  style: TextStyle(color: Colors.grey)),
               const SizedBox(height: 16),
             ],
             ElevatedButton(
               onPressed: _uploading ? null : _upload,
-              child: const Text('Ɗora (Upload)'),
+              child: const Text('Dora (Upload)'),
             ),
           ],
         ),

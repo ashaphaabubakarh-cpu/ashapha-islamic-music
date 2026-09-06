@@ -12,7 +12,7 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await NotificationService().init();await Supabase.initialize(
     url: 'https://hkvccgtpuipcqongrvmw.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3amR1cXVsdnZwZ2JlYmxneG94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyNTY3NzgsImV4cCI6MjEwMzgzMjc3OH0.0QKMXHU8900qPKa1D7uHn5W29H8AkE5xS3j3DWzafK0',
+    anonKey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrdmNjZ3RwdWlwY3Fvbmdydm13Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyNTczMTEsImV4cCI6MjEwMzgzMzMxMX0.72ImuVGGTS6YSS6_hIE4zGRDJTEKzIwgOhNlWfaQ1z0',
   );
   runApp(const AshapaApp());
 }

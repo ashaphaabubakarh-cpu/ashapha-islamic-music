@@ -92,7 +92,7 @@ class AudioPlayerService extends ChangeNotifier {
     final path = await _localFilePath(songId);
     final file = File(path);
     if (await file.exists()) await file.delete();
-  playerService.playSong(song, queue: songs);
+  }
 
   @override
   void dispose() {

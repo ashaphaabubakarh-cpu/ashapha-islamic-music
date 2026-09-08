@@ -92,7 +92,7 @@ class _SongListTab extends StatelessWidget {
                   song: song,
                   isFavorite: isFav,
                   onTap: () {
-                    playerService.playSong(song);
+                     playerService.playSong(song, queue: songs);).;
                     firestore.incrementPlayCount(song.id);
                   },
                   onFavoriteTap: () =>

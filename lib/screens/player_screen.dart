@@ -62,7 +62,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     final song = service.currentSong;
 
     if (song == null) {
-      return const Scaffold(body: Center(child: Text('Babu waƙar da ake kunnawa')));
+      return const Scaffold(body: Center(child: Text('Babu wakar da ake kunnawa')));
     }
 
     return Scaffold(
@@ -90,8 +90,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
             ),
             const SizedBox(height: 30),
             Text(song.title,
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center),
             const SizedBox(height: 6),
             Text(song.artist, style: const TextStyle(color: Colors.grey, fontSize: 15)),
@@ -125,26 +124,42 @@ class _PlayerScreenState extends State<PlayerScreen> {
               },
             ),
             const SizedBox(height: 10),
-            StreamBuilder<bool>(
-              stream: service.player.playingStream,
-              builder: (context, snap) {
-                final playing = snap.data ?? false;
-                return IconButton(
-                  iconSize: 72,
-                  color: AppColors.gold,
-                  icon: Icon(playing
-                      ? Icons.pause_circle_filled
-                      : Icons.play_circle_filled),
-                  onPressed: () => playing ? service.pause() : service.resume(),
-                );
-              },
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  iconSize: 44,
+                  color: service.hasPrevious ? AppColors.gold : AppColors.cardGrey,
+                  icon: const Icon(Icons.skip_previous),
+                  onPressed: service.hasPrevious ? () => service.playPrevious() : null,
+                ),
+                const SizedBox(width: 24),
+                StreamBuilder<bool>(
+                  stream: service.player.playingStream,
+                  builder: (context, snap) {
+                    final playing = snap.data ?? false;
+                    return IconButton(
+                      iconSize: 72,
+                      color: AppColors.gold,
+                      icon: Icon(playing ? Icons.pause_circle_filled : Icons.play_circle_filled),
+                      onPressed: () => playing ? service.pause() : service.resume(),
+                    );
+                  },
+                ),
+                const SizedBox(width: 24),
+                IconButton(
+                  iconSize: 44,
+                  color: service.hasNext ? AppColors.gold : AppColors.cardGrey,
+                  icon: const Icon(Icons.skip_next),
+                  onPressed: service.hasNext ? () => service.playNext() : null,
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             if (_downloadProgress != null)
               Column(
                 children: [
-                  LinearProgressIndicator(
-                      value: _downloadProgress, color: AppColors.gold),
+                  LinearProgressIndicator(value: _downloadProgress, color: AppColors.gold),
                   const SizedBox(height: 6),
                   Text('${((_downloadProgress ?? 0) * 100).toInt()}%',
                       style: const TextStyle(color: Colors.grey)),

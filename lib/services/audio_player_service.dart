@@ -13,9 +13,28 @@ class AudioPlayerService extends ChangeNotifier {
   final AudioPlayer _player = AudioPlayer();
   Song? currentSong;
 
+  List<Song> _queue = [];
+  int _currentIndex = -1;
+
   AudioPlayer get player => _player;
 
-  Future<void> playSong(Song song) async {
+  bool get hasNext =>
+      _queue.isNotEmpty && _currentIndex >= 0 && _currentIndex < _queue.length - 1;
+
+  bool get hasPrevious => _queue.isNotEmpty && _currentIndex > 0;
+
+  Future<void> playSong(Song song, {List<Song>? queue}) async {
+    if (queue != null) {
+      _queue = queue;
+      _currentIndex = _queue.indexWhere((s) => s.id == song.id);
+    } else if (_queue.isEmpty ||
+        _queue.indexWhere((s) => s.id == song.id) == -1) {
+      _queue = [song];
+      _currentIndex = 0;
+    } else {
+      _currentIndex = _queue.indexWhere((s) => s.id == song.id);
+    }
+
     currentSong = song;
     notifyListeners();
 
@@ -28,6 +47,16 @@ class AudioPlayerService extends ChangeNotifier {
       await _player.setUrl(song.audioUrl);
     }
     await _player.play();
+  }
+
+  Future<void> playNext() async {
+    if (!hasNext) return;
+    await playSong(_queue[_currentIndex + 1]);
+  }
+
+  Future<void> playPrevious() async {
+    if (!hasPrevious) return;
+    await playSong(_queue[_currentIndex - 1]);
   }
 
   Future<void> pause() => _player.pause();

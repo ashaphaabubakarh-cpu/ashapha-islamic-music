@@ -42,9 +42,18 @@ class AudioPlayerService extends ChangeNotifier {
     final file = File(localPath);
 
     if (await file.exists()) {
+      // Already fully downloaded — play straight from disk.
       await _player.setFilePath(localPath);
     } else {
-      await _player.setUrl(song.audioUrl);
+      // Stream from Supabase, while silently caching a copy in the
+      // background so replays of this song work even with no network.
+      final cacheFile = await _streamCacheFilePath(song.id);
+      await _player.setAudioSource(
+        LockCachingAudioSource(
+          Uri.parse(song.audioUrl),
+          cacheFile: File(cacheFile),
+        ),
+      );
     }
     await _player.play();
   }
@@ -66,6 +75,11 @@ class AudioPlayerService extends ChangeNotifier {
   Future<String> _localFilePath(String songId) async {
     final dir = await getApplicationDocumentsDirectory();
     return '${dir.path}/ashapa_$songId.mp3';
+  }
+
+  Future<String> _streamCacheFilePath(String songId) async {
+    final dir = await getApplicationDocumentsDirectory();
+    return '${dir.path}/ashapa_stream_cache_$songId.mp3';
   }
 
   Future<bool> isDownloaded(String songId) async {

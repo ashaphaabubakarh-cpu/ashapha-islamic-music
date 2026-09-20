@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:share_plus/share_plus.dart';
 import '../services/audio_player_service.dart';
 import '../theme/app_theme.dart';
 
@@ -67,7 +68,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.black,
-      appBar: AppBar(title: const Text('Ana Kunnawa')),
+      appBar: AppBar(
+        title: const Text('Ana Kunnawa'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: () {
+              Share.share(
+                'Ina sauraron "${song.title}" akan Ashapha Islamic Music app! 🎵',
+              );
+            },
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(

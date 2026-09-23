@@ -16,6 +16,8 @@ class AudioPlayerService extends ChangeNotifier {
   List<Song> _queue = [];
   int _currentIndex = -1;
 
+  String? lastError;
+
   AudioPlayer get player => _player;
 
   bool get hasNext =>
@@ -36,26 +38,32 @@ class AudioPlayerService extends ChangeNotifier {
     }
 
     currentSong = song;
+    lastError = null;
     notifyListeners();
 
-    final localPath = await _localFilePath(song.id);
-    final file = File(localPath);
+    try {
+      final localPath = await _localFilePath(song.id);
+      final file = File(localPath);
 
-    if (await file.exists()) {
-      // Already fully downloaded — play straight from disk.
-      await _player.setFilePath(localPath);
-    } else {
-      // Stream from Supabase, while silently caching a copy in the
-      // background so replays of this song work even with no network.
-      final cacheFile = await _streamCacheFilePath(song.id);
-      await _player.setAudioSource(
-        LockCachingAudioSource(
-          Uri.parse(song.audioUrl),
-          cacheFile: File(cacheFile),
-        ),
-      );
+      if (await file.exists()) {
+        // Already fully downloaded — play straight from disk.
+        await _player.setFilePath(localPath);
+      } else {
+        // Stream from Supabase, while silently caching a copy in the
+        // background so replays of this song work even with no network.
+        final cacheFile = await _streamCacheFilePath(song.id);
+        await _player.setAudioSource(
+          LockCachingAudioSource(
+            Uri.parse(song.audioUrl),
+            cacheFile: File(cacheFile),
+          ),
+        );
+      }
+      await _player.play();
+    } catch (e) {
+      lastError = 'Kuskure wajen kunna waka: $e';
+      notifyListeners();
     }
-    await _player.play();
   }
 
   Future<void> playNext() async {
@@ -91,7 +99,7 @@ class AudioPlayerService extends ChangeNotifier {
   /// local device storage for offline playback.
   Future<void> downloadForOffline(
     Song song, {
-    void Function(int received, int total)? onProgress,
+    void Function(int received, int? total)? onProgress,
   }) async {
     final path = await _localFilePath(song.id);
     final dio = Dio();

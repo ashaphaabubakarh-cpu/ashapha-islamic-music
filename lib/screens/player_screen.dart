@@ -66,6 +66,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
       return const Scaffold(body: Center(child: Text('Babu wakar da ake kunnawa')));
     }
 
+    if (service.lastError != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(service.lastError!), backgroundColor: Colors.red),
+          );
+        }
+      });
+    }
+
     return Scaffold(
       backgroundColor: AppColors.black,
       appBar: AppBar(

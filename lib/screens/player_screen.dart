@@ -37,7 +37,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     setState(() => _downloadProgress = 0);
     await service.downloadForOffline(
       song,
-      onProgress: (received, total) {
+      if (total != null && total > 0 && mounted) {
         if (total > 0 && mounted) {
           setState(() => _downloadProgress = received / total);
         }

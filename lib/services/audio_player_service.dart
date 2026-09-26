@@ -17,13 +17,21 @@ class AudioPlayerService extends ChangeNotifier {
   int _currentIndex = -1;
 
   String? lastError;
+  bool _repeatOne = false;
 
   AudioPlayer get player => _player;
+  bool get isRepeatOne => _repeatOne;
 
   bool get hasNext =>
       _queue.isNotEmpty && _currentIndex >= 0 && _currentIndex < _queue.length - 1;
 
   bool get hasPrevious => _queue.isNotEmpty && _currentIndex > 0;
+
+  Future<void> toggleRepeatOne() async {
+    _repeatOne = !_repeatOne;
+    await _player.setLoopMode(_repeatOne ? LoopMode.one : LoopMode.off);
+    notifyListeners();
+  }
 
   Future<void> playSong(Song song, {List<Song>? queue}) async {
     if (queue != null) {
@@ -52,6 +60,7 @@ class AudioPlayerService extends ChangeNotifier {
         // Stream directly from Supabase.
         await _player.setUrl(song.audioUrl);
       }
+      await _player.setLoopMode(_repeatOne ? LoopMode.one : LoopMode.off);
       await _player.play();
     } catch (e) {
       lastError = 'Kuskure wajen kunna waka: $e';

@@ -82,6 +82,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
         title: const Text('Ana Kunnawa'),
         actions: [
           IconButton(
+            icon: Icon(
+              Icons.repeat_one,
+              color: service.isRepeatOne ? AppColors.gold : Colors.grey,
+            ),
+            onPressed: () => service.toggleRepeatOne(),
+          ),
+          IconButton(
             icon: const Icon(Icons.share),
             onPressed: () {
               Share.share(

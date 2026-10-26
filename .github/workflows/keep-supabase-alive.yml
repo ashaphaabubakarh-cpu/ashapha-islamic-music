@@ -1,0 +1,22 @@
+Keep Supabase Alive
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ping Supabase storage
+        run: |
+          KEY=$(grep -oP "anonKey: '\K[^']+" lib/main.dart)
+          curl -sS --fail -o /dev/null -w "HTTP %{http_code}\n" \
+            -X POST "https://hkvccgtpuipcqongrvmw.supabase.co/storage/v1/object/list/songs" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"prefix":"","limit":1}'

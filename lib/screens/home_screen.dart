@@ -9,6 +9,7 @@ import '../widgets/song_tile.dart';
 import '../widgets/mini_player.dart';
 import 'search_screen.dart';
 import 'favorites_screen.dart';
+import 'offline_screen.dart';
 import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -29,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _SongListTab(firestore: _firestore, uid: uid),
       const SearchScreen(),
       const FavoritesScreen(),
+      const OfflineScreen(),
       const ProfileScreen(),
     ];
 
@@ -47,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
               BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
               BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
               BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favorites'),
+              BottomNavigationBarItem(icon: Icon(Icons.download_done), label: 'Offline'),
               BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
             ],
           ),
@@ -73,8 +76,9 @@ class _SongListTab extends StatelessWidget {
           stream: firestore.streamSongs(),
           builder: (context, snap) {
             if (!snap.hasData) {
-              return const Center(
-                  child: CircularProgressIndicator(color: AppColors.gold));
+              // No answer from the internet yet: after a few seconds,
+              // show the songs that are saved on the phone instead.
+              return const _WaitingOrOffline();
             }
             final songs = snap.data!;
             if (songs.isEmpty) {
@@ -83,6 +87,9 @@ class _SongListTab extends StatelessWidget {
                     style: TextStyle(color: Colors.grey)),
               );
             }
+            // Remember details of songs downloaded before, so they
+            // can be listed with no internet later.
+            playerService.rememberDownloaded(songs);
             return ListView.builder(
               itemCount: songs.length,
               itemBuilder: (context, i) {
@@ -92,7 +99,7 @@ class _SongListTab extends StatelessWidget {
                   song: song,
                   isFavorite: isFav,
                   onTap: () {
-                     playerService.playSong(song, queue: songs);
+                    playerService.playSong(song, queue: songs);
                     firestore.incrementPlayCount(song.id);
                   },
                   onFavoriteTap: () =>
@@ -101,6 +108,84 @@ class _SongListTab extends StatelessWidget {
               },
             );
           },
+        );
+      },
+    );
+  }
+}
+
+/// Shown while the song list has not arrived. After 3 seconds with no
+/// answer (no internet), it lists the songs saved on the phone.
+class _WaitingOrOffline extends StatefulWidget {
+  const _WaitingOrOffline();
+
+  @override
+  State<_WaitingOrOffline> createState() => _WaitingOrOfflineState();
+}
+
+class _WaitingOrOfflineState extends State<_WaitingOrOffline> {
+  bool _waited = false;
+  Future<List<Song>>? _downloaded;
+
+  @override
+  void initState() {
+    super.initState();
+    _downloaded = context.read<AudioPlayerService>().downloadedSongs();
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _waited = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_waited) {
+      return const Center(
+          child: CircularProgressIndicator(color: AppColors.gold));
+    }
+    final player = context.read<AudioPlayerService>();
+    return FutureBuilder<List<Song>>(
+      future: _downloaded,
+      builder: (context, snap) {
+        final songs = snap.data ?? [];
+        return Column(
+          children: [
+            Container(
+              width: double.infinity,
+              color: AppColors.darkGrey,
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppColors.gold),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      songs.isEmpty
+                          ? 'Babu intanet. Ana jiran haɗi...'
+                          : 'Babu intanet. Ga waƙoƙin da ke wayarka:',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: songs.length,
+                itemBuilder: (context, i) {
+                  final song = songs[i];
+                  return DownloadedTile(
+                    song: song,
+                    onTap: () => player.playSong(song, queue: songs),
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );
